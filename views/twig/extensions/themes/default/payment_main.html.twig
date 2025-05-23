@@ -1,0 +1,26 @@
+{% extends "payment_main.html.twig" %}
+
+{% block admin_payment_main_form %}
+    {% if edit is not null and edit.isVobapayPaymentMethod() == 1 %}
+        {% set paymentModel = edit.getVobapayPaymentModel() %}
+        <tr>
+            <td class="edittext" colspan="2">
+                <b>{{ translate({ ident: "VOBAPAY_IS_VOBAPAY" }) }}</b>
+                <input type="hidden" name="vobapay[api]" value="payment">
+            </td>
+        </tr>
+        <tr id="vobapay_payment_description">
+            <td class="edittext" width="70">
+                {{ translate({ ident: "VOBAPAY_PAYMENT_DESCRIPTION" }) }}
+            </td>
+            <td class="edittext">
+                <input type="text" class="editinput" size="25" name="vobapay[payment_description]" value="{{ paymentModel.getConfigParam('payment_description') }}" {{ readonly }}>
+                {% include "inputhelp.html.twig" with {'sHelpId': help_id("VOBAPAY_PAYMENT_DESCRIPTION_HELP"), 'sHelpText': help_text("VOBAPAY_PAYMENT_DESCRIPTION_HELP")} %}
+            </td>
+        </tr>
+        {% if paymentModel.getCustomConfigTemplate() != false %}
+            {% include paymentModel.getCustomConfigTemplate() %}
+        {% endif %}
+    {% endif %}
+    {{ parent() }}
+{% endblock %}

@@ -1,0 +1,13 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+
+  GuzzleHttp\Client: ~
+
+  Vobapay\Payment\Core\Service\RestClient:
+    arguments:
+      $client: '@GuzzleHttp\Client'
+      $logger: '@oxid_esales.monolog.logger'
+    public: true

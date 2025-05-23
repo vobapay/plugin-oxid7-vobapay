@@ -1,0 +1,14 @@
+.payment-option-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.payment-option-form img {
+    width: 40px;
+    height: auto;
+}
+
+.form-check-input {
+    margin: 0;
+}

@@ -1,0 +1,265 @@
+{% include "headitem.html.twig" with {title: "GENERAL_ADMIN_TITLE"|translate} %}
+<style>
+    .refundTable TD {
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+
+    TD.borderTop {
+        border-top: 1px solid black !important;
+    }
+
+    FIELDSET {
+        border-radius: 15px;
+        margin-bottom: 20px;
+        padding: 10px;
+    }
+
+    FIELDSET.operation SPAN {
+        margin-left: 2px;
+    }
+
+    FIELDSET .operationSubmit {
+        margin-top: 15px;
+    }
+
+    .typeSelect {
+        margin-bottom: 10px;
+    }
+
+    FIELDSET.operationError {
+        background-color: #FF8282;
+        color: black;
+        border: 3px solid #F00000;
+    }
+
+    FIELDSET.operationNotice {
+        background-color: #ffeeb5;
+        border: 3px solid #FFE385;
+    }
+
+    FIELDSET.operationSuccess {
+        background-color: #7aff9e;
+        border: 3px solid #00b02f;
+    }
+
+    FIELDSET.message STRONG {
+        display: block;
+        margin-bottom: 10px;
+    }
+
+    .error-message {
+        color: red !important;
+        font-size: 12px;
+        margin-top: 3px;
+        display: block;
+    }
+</style>
+{% if oView.isVobapayOrder() is same as(true) %}
+    {% set blIsOrderRefundable = oView.isOrderRefundable() %}
+    {% set blIsOrderCapturable = oView.isOrderCapturable() %}
+    {% set dTotalRefund = oView.getTotalRefund() %}
+    {% set dTotalCapture = oView.getTotalCapture() %}
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            function validateForm(event, form, fieldName, maxAmount, errorMessage) {
+                let amountField = form.querySelector(`[name='${fieldName}']`);
+                let errorSpan = amountField.parentNode.querySelector(".error-message");
+                let amount = parseFloat(amountField.value) || 0;
+
+                if (isNaN(amount) || amount > maxAmount || amount <= 0) {
+                    event.preventDefault();
+                    showError(errorMessage, errorSpan);
+                } else {
+                    hideError(errorSpan);
+                }
+            }
+
+            let captureForm = document.getElementById("capture");
+            let refundForm = document.getElementById("refund");
+
+            if (captureForm) {
+                captureForm.addEventListener("submit", function (event) {
+                    let maxCaptureAmount = parseFloat("{{ oView.getAvailableCapturable()|default('0') }}") || 0;
+                    validateForm(event, captureForm, "capture_amount", maxCaptureAmount, "{{ translate({ ident: 'VOBAPAY_CAPTURE_AMOUNT_ERROR' }) }}");
+                });
+            }
+
+            if (refundForm) {
+                refundForm.addEventListener("submit", function (event) {
+                    let maxRefundAmount = parseFloat("{{ oView.getAvailableRefundable()|default('0') }}") || 0;
+                    validateForm(event, refundForm, "refund_amount", maxRefundAmount, "{{ translate({ ident: 'VOBAPAY_REFUND_AMOUNT_ERROR' }) }}");
+                });
+            }
+
+            function showError(message, errorSpan) {
+                if (errorSpan) {
+                    errorSpan.textContent = message;
+                    errorSpan.style.display = 'block';
+                }
+            }
+
+            function hideError(errorSpan) {
+                if (errorSpan) {
+                    errorSpan.textContent = "";
+                    errorSpan.style.display = 'none';
+                }
+            }
+        });
+    </script>
+{% endif %}
+
+{% if readonly %}
+    {% set readonly = "readonly disabled" %}
+{% else %}
+    {% set readonly = "" %}
+{% endif %}
+
+<form name="transfer" id="transfer" action="{{ oViewConf.getSelfLink()|raw }}" method="post">
+    {{ oViewConf.getHiddenSid()|raw }}
+    <input type="hidden" name="oxid" value="{{ oxid }}">
+    <input type="hidden" name="cl" value="vobapay_order_operations">
+</form>
+{% if oView.isVobapayOrder() is same as(true) %}
+    {% if oView.wasRefundSuccessful() == true %}
+        <fieldset class="operationSuccess message">
+            {{ translate({ ident: "VOBAPAY_REFUND_SUCCESSFUL" }) }}
+        </fieldset>
+    {% endif %}
+    {% if oView.wasCaptureSuccessful() == true %}
+        <fieldset class="operationSuccess message">
+            {{ translate({ ident: "VOBAPAY_CAPTURE_SUCCESSFUL" }) }}
+        </fieldset>
+    {% endif %}
+    {% if oView.getErrorMessage() != false %}
+        <fieldset class="operationError message">
+            <strong>Error</strong>
+            {{ oView.getErrorMessage() }}
+        </fieldset>
+    {% endif %}
+
+    {% set order = oView.getOrder() %}
+    {% set paymentType = order.getPaymentType() %}
+    <fieldset>
+        <legend>{{ translate({ ident: "VOBAPAY_PAYMENT_DETAILS" }) }}</legend>
+        <table>
+            <tr>
+                <td class="edittext">
+                    {{ translate({ ident: "VOBAPAY_PAYMENT_TYPE" }) }}:
+                </td>
+                <td class="edittext">
+                    {{ paymentType.oxpayments__oxdesc.value }}
+                </td>
+                <td class="edittext"></td>
+            </tr>
+            <tr>
+                <td class="edittext">
+                    {{ translate({ ident: "VOBAPAY_TRANSACTION_ID" }) }}:
+                </td>
+                <td class="edittext">
+                    {{ order.oxorder__oxtransid.value }}
+                </td>
+                <td class="edittext"></td>
+            </tr>
+            <tr>
+                <td class="edittext">
+                    {{ translate({ ident: "VOBAPAY_PAYMENT_DATE" }) }}:
+                </td>
+                <td class="edittext">
+                    {{ order.oxorder__oxpaid.value }}
+                </td>
+                <td class="edittext"></td>
+            </tr>
+            <tr>
+                <td class="edittext">
+                    {{ translate({ ident: "VOBAPAY_ORDER_TOTAL_AMOUNT" }) }}:
+                </td>
+                <td class="edittext">
+                    {{ oView.getOrderFormatedPrice(order.oxorder__oxtotalordersum.value) }}&nbsp;<small>{{ edit.oxorder__oxcurrency.value }}</small>
+                </td>
+                <td class="edittext"></td>
+            </tr>
+            {% if dTotalCapture > 0 %}
+                <tr>
+                    <td class="edittext">
+                        {{ translate({ ident: "VOBAPAY_ORDER_TOTAL_CAPTURE" }) }}:
+                    </td>
+                    <td class="edittext">{{ dTotalCapture }}&nbsp;<small>{{ edit.oxorder__oxcurrency.value }}</small>
+                    </td>
+                    <td class="edittext"></td>
+                </tr>
+            {% endif %}
+            {% if dTotalRefund > 0 %}
+                <tr>
+                    <td class="edittext">
+                        {{ translate({ ident: "VOBAPAY_ORDER_TOTAL_REFUND" }) }}:
+                    </td>
+                    <td class="edittext">{{ dTotalRefund }}&nbsp;<small>{{ edit.oxorder__oxcurrency.value }}</small>
+                    </td>
+                    <td class="edittext"></td>
+                </tr>
+            {% endif %}
+            {% if order.oxorder__vobapayexternaltransid.value != "" %}
+                <tr>
+                    <td class="edittext">
+                        {{ translate({ ident: "VOBAPAY_EXTERNAL_TRANSACTION_ID" }) }}:
+                    </td>
+                    <td class="edittext">
+                        {{ order.oxorder__vobapayexternaltransid.value }}
+                    </td>
+                    <td class="edittext"></td>
+                </tr>
+            {% endif %}
+        </table>
+    </fieldset>
+
+    {% if blIsOrderCapturable == true %}
+        <fieldset class="operation">
+            <legend>{{ translate({ ident: "VOBAPAY_FULL_CAPTURE" }) }}</legend>
+            <form name="capture" id="capture" action="{{ oViewConf.getSelfLink()|raw }}" method="post">
+                {{ oViewConf.getHiddenSid()|raw }}
+                <input type="hidden" name="cl" value="vobapay_order_operations">
+                <input type="hidden" name="oxid" value="{{ oxid }}">
+                <input type="hidden" name="fnc" value="capture">
+                <span>{{ translate({ ident: "VOBAPAY_CAPTURE_REMAINING" }) }}: {{ oView.getAvailableCapturable() }} <small>{{ edit.oxorder__oxcurrency.value }}</small></span>
+                <br><br>
+                <span><label
+                            for="capture_amount">{{ translate({ ident: "VOBAPAY_CAPTURE_DESCRIPTION" }) }}:</label></span>
+                <input type="text" name="capture_amount" value="{{ oView.getAvailableCapturable() }}"
+                       maxlength="10" size="20"><small>{{ edit.oxorder__oxcurrency.value }}</small>
+                <span class="error-message" style="color: red; display: none;"></span><br>
+                <input type="submit" value="{{ translate({ ident: "VOBAPAY_CAPTURE_SUBMIT" }) }}"
+                       class="operationSubmit">
+            </form>
+        </fieldset>
+    {% endif %}
+
+    {% if blIsOrderRefundable == true %}
+        <fieldset class="operation">
+            <legend>{{ translate({ ident: "VOBAPAY_FULL_REFUND" }) }}</legend>
+            <form name="refund" id="refund" action="{{ oViewConf.getSelfLink()|raw }}" method="post">
+                {{ oViewConf.getHiddenSid()|raw }}
+                <input type="hidden" name="cl" value="vobapay_order_operations">
+                <input type="hidden" name="oxid" value="{{ oxid }}">
+                <input type="hidden" name="fnc" value="refund">
+                <span>{{ translate({ ident: "VOBAPAY_REFUND_REMAINING" }) }}: {{ oView.getAvailableRefundable() }} <small>{{ edit.oxorder__oxcurrency.value }}</small></span>
+                <br><br>
+                <span><label
+                            for="refund_amount">{{ translate({ ident: "VOBAPAY_REFUND_DESCRIPTION" }) }}:</label></span>
+                <input type="text" name="refund_amount" value="{{ oView.getAvailableRefundable() }}"
+                       maxlength="10" size="20"><small>{{ edit.oxorder__oxcurrency.value }}</small>
+                <span class="error-message" style="color: red; display: none;"></span><br>
+                <input type="submit" value="{{ translate({ ident: "VOBAPAY_REFUND_SUBMIT" }) }}"
+                       class="operationSubmit">
+            </form>
+        </fieldset>
+    {% endif %}
+{% else %}
+    <fieldset>
+        {{ translate({ ident: "VOBAPAY_IS_NOT_VOBAPAY_ORDER" }) }}
+    </fieldset>
+{% endif %}
+
+{% include "bottomnaviitem.html.twig" %}
+</table>
+{% include "bottomitem.html.twig" %}

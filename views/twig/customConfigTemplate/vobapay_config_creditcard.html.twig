@@ -1,0 +1,17 @@
+<tr>
+    <td class="edittext" width="70">
+        {{ translate({ ident: "VOBAPAY_CREDITCARD_CAPTURE" }) }}
+    </td>
+    <td class="edittext" width="150">
+        {% set sCaptureAutoValue = paymentModel.getCaptureAutoValue() %}
+        {% set sCaptureManualValue = paymentModel.getCaptureManualValue() %}
+        <select id="vobapaySelectCaptureMethod" name="vobapay[creditcard_capture_method]"
+                style="width:177px;" {{ readonly }}>
+            <option value="{{ sCaptureManualValue }}"
+                    {% if paymentModel.getConfigParam('creditcard_capture_method') == sCaptureManualValue %}selected{% endif %}>{{ translate({ ident: "VOBAPAY_CC_CAPTURE_AUTH" }) }}</option>
+            <option value="{{ sCaptureAutoValue }}"
+                    {% if paymentModel.getConfigParam('creditcard_capture_method') == sCaptureAutoValue %}selected{% endif %}>{{ translate({ ident: "VOBAPAY_CC_CAPTURE_DIRECT" }) }}</option>
+        </select>
+        {% include "inputhelp.html.twig" with {'sHelpId': help_id("VOBAPAY_CREDITCARD_CAPTURE_METHOD_HELP"), 'sHelpText': help_text("VOBAPAY_CREDITCARD_CAPTURE_METHOD_HELP")} %}
+    </td>
+</tr>

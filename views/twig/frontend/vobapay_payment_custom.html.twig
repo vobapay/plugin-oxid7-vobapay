@@ -1,0 +1,30 @@
+{% set paymentModel = paymentmethod.getVobapayPaymentModel() %}
+<div class="payment-option" {% if paymentModel.isVobapayMethodHiddenInitially() %}style="display:none"{% endif %}>
+    <div class="payment-option-form">
+        <input class="form-check-input" id="payment_{{ sPaymentID }}" type="radio" name="paymentid"
+               value="{{ sPaymentID }}"{% if oView.getCheckedPaymentId() == paymentmethod.oxpayments__oxid.value %} checked{% endif %}>
+
+        {% set logo = paymentmethod.getPaymentLogo() %}
+        {% if logo %}
+            <img src="{{ logo }}" alt="{{ paymentmethod.oxpayments__oxdesc.value }}">
+        {% endif %}
+        <label class="form-check-label"
+               for="payment_{{ sPaymentID }}">{{ paymentmethod.oxpayments__oxdesc.value }}</label>
+
+        {% if paymentmethod.oxpayments__oxlongdesc.value|striptags|trim or (paymentModel and paymentModel.getCustomFrontendTemplate is not same as(false)) %}
+            <div class="payment-option-info{% if oView.getCheckedPaymentId() == paymentmethod.oxpayments__oxid.value %} activePayment{% endif %}">
+                {% if paymentModel and paymentModel.getCustomFrontendTemplate is not same as(false) %}
+                    {% include paymentModel.getCustomFrontendTemplate() %}
+                {% endif %}
+
+                {% block checkout_payment_longdesc %}
+                    {% if paymentmethod.oxpayments__oxlongdesc.value|striptags|trim %}
+                        <div class="desc">
+                            {{ paymentmethod.oxpayments__oxlongdesc.value }}
+                        </div>
+                    {% endif %}
+                {% endblock %}
+            </div>
+        {% endif %}
+    </div>
+</div>

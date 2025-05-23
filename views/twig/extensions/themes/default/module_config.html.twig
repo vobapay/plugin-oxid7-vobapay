@@ -1,0 +1,25 @@
+{% extends "module_config.html.twig" %}
+
+{% block admin_module_config_var %}
+    {% if module_var == 'vp_statuspending' or module_var == 'vp_statusprocessing' or module_var == 'vp_statuscancelled' %}
+        <dl>
+            <dt>
+                <select class="select" name="confselects[{{ module_var }}]" {{  readonly  }}>
+                    {% for sFolder, sColor in oView.vobapayGetOrderFolders() %}
+                        <option value="{{ sFolder }}" {% if confselects[module_var] == sFolder %}selected{% endif %}>{{ translate({ ident: sFolder, noerror: true }) }}</option>
+                    {% endfor %}
+                </select>
+                {% include "inputhelp.html.twig" with {'sHelpId': help_id("HELP_SHOP_MODULE_" ~ module_var), 'sHelpText': help_text("HELP_SHOP_MODULE_" ~ module_var)} %}
+            </dt>
+            <dd>
+                {{ translate({ ident: "SHOP_MODULE_" ~ module_var }) }}
+            </dd>
+        </dl>
+    {% else %}
+        {{ parent() }}
+    {% endif %}
+{% endblock %}
+
+{% block admin_module_config_form %}
+    {{ parent() }}
+{% endblock %}
